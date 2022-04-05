@@ -1,10 +1,13 @@
 using System.Text.Json;
 using System.IO;
+using System.Text.Json.Serialization;
 
 namespace PropertyFileController
 {
     public class LifeProperty
     {
+        public LifeProperty() {}
+
         public LifeProperty(int BoardWidth, int BoardHeight, int BoardCellSize, double LifeDensity)
         {
             this.BoardWidth = BoardWidth;
@@ -22,14 +25,15 @@ namespace PropertyFileController
     {
         public static void SerializeToJSON(LifeProperty theLifeProperty, string theFileName = "LifeProperty.json")
         {
-            using FileStream aCreateStream = File.Create(theFileName);
-            JsonSerializer.Serialize(aCreateStream, theLifeProperty);
+            string jsonString = JsonSerializer.Serialize(theLifeProperty);
+            File.WriteAllText(theFileName, jsonString);
         }
 
-        public static void DeserializeFromJSON(out LifeProperty theLifeProperty, string theFileName = "LifeProperty.json")
+        public static LifeProperty DeserializeFromJSON(string theFileName = "LifeProperty.json")
         {
-            string aSaveStream = File.ReadAllText(theFileName);
-            theLifeProperty = JsonSerializer.Deserialize<LifeProperty>(aSaveStream)!;
+            string jsonString = File.ReadAllText(theFileName);
+
+            return JsonSerializer.Deserialize<LifeProperty>(jsonString)!;
         }
     }
 }

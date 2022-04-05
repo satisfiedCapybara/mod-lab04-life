@@ -4,7 +4,7 @@ using cli_life;
 
 namespace StatusFileController
 {
-    internal class TextController
+    public class TextController
     {
         public static void SaveLifeStatus(Cell[,] theCells, string theFileName = "LifeStatus.txt")
         {

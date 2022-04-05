@@ -4,7 +4,7 @@ using StatusFileController;
 
 namespace ClassificationTK
 {
-    internal class Classification
+    public class Classification
     {
         public static Cell[][,] LoadClassificationFiles()
         {
@@ -123,6 +123,61 @@ namespace ClassificationTK
 
             return theClassification[0] + theClassification[2] + theClassification[3]
                  + theClassification[4] + theClassification[6] + theClassification[7];
+        }
+        public static int StabilityPhase(ref Board board)
+        {
+            Board aStartBoard = new Board(board.Width, board.Height, 1);
+
+            Cell[,] aFirstCellState = new Cell[board.Width,board.Height];
+            for (int row = 0; row < board.Rows; row++)
+            {
+                for (int col = 0; col < board.Columns; col++)   
+                {
+                    aFirstCellState[row, col] = new Cell();
+                    aFirstCellState[row, col].IsAlive = board.Cells[row,col].IsAlive;
+                }
+            }
+            aStartBoard.Cells = aFirstCellState;
+            aStartBoard.ConnectNeighbors();
+
+            int aCellsNumber = 0;
+            int aStep = 0;
+            while(true)
+            {
+                Cell[,] aPreviousBorder = new Cell[board.Width,board.Height];
+
+                for (int row = 0; row < board.Rows; row++)
+                {
+                    for (int col = 0; col < board.Columns; col++)   
+                    {
+                        aPreviousBorder[row, col] = new Cell();
+                        aPreviousBorder[row, col].IsAlive = board.Cells[row,col].IsAlive;
+                    }
+                }
+                board.Advance();
+
+                for (int row = 0; row < board.Rows; row++)
+                {
+                    for (int col = 0; col < board.Columns; col++)   
+                    {
+                        if (aPreviousBorder[row,col].IsAlive == board.Cells[row, col].IsAlive)
+                        {
+                            aCellsNumber++;
+                        }
+                    }
+                }
+
+                aStep ++;
+                if(aCellsNumber == board.Columns * board.Rows || aStep > 1000)
+                {
+                    break;
+                }
+                aCellsNumber = 0;
+            }
+            
+            board = aStartBoard;
+
+            return aStep;
         }
     }
 }
