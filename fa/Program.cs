@@ -1,9 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using StatusFileController;
+using PropertyFileController;
 using System.Text;
 using System.Threading.Tasks;
 using System.Threading;
+using ClassificationTK;
 
 namespace cli_life
 {
@@ -27,7 +30,7 @@ namespace cli_life
     }
     public class Board
     {
-        public readonly Cell[,] Cells;
+        public Cell[,] Cells;
         public readonly int CellSize;
 
         public int Columns { get { return Cells.GetLength(0); } }
@@ -52,7 +55,9 @@ namespace cli_life
         public void Randomize(double liveDensity)
         {
             foreach (var cell in Cells)
+            {
                 cell.IsAlive = rand.NextDouble() < liveDensity;
+            }
         }
 
         public void Advance()
@@ -62,7 +67,7 @@ namespace cli_life
             foreach (var cell in Cells)
                 cell.Advance();
         }
-        private void ConnectNeighbors()
+        public void ConnectNeighbors()
         {
             for (int x = 0; x < Columns; x++)
             {
@@ -89,14 +94,88 @@ namespace cli_life
     class Program
     {
         static Board board;
-        static private void Reset()
+        static private void Reset(LifeProperty aLifeProperty)
         {
             board = new Board(
-                width: 50,
-                height: 20,
-                cellSize: 1,
-                liveDensity: 0.5);
+                aLifeProperty.BoardWidth,
+                aLifeProperty.BoardHeight,
+                aLifeProperty.BoardCellSize,
+                aLifeProperty.LifeDensity);
         }
+
+        public static int AliveCellsNumber()
+        {
+            int AliveCellsNum = 0;
+            for (int row = 0; row < board.Rows; row++)
+            {
+                for (int col = 0; col < board.Columns; col++)   
+                {
+                    if (board.Cells[col, row].IsAlive)
+                    {
+                        AliveCellsNum ++;
+                    }
+                }
+            }
+
+            return AliveCellsNum ++;
+        }
+
+        static int StabilityPhase(ref Board theBoard)
+        {
+            Board aStartBoard = new Board(board.Width, board.Height, 1);
+
+            Cell[,] aFirstCellState = new Cell[theBoard.Width,theBoard.Height];
+            for (int row = 0; row < board.Rows; row++)
+            {
+                for (int col = 0; col < board.Columns; col++)   
+                {
+                    aFirstCellState[row, col] = new Cell();
+                    aFirstCellState[row, col].IsAlive = board.Cells[row,col].IsAlive;
+                }
+            }
+            aStartBoard.Cells = aFirstCellState;
+            aStartBoard.ConnectNeighbors();
+
+            int aCellsNumber = 0;
+            int aStep = 0;
+            while(true)
+            {
+                Cell[,] aPreviousBorder = new Cell[theBoard.Width,theBoard.Height];
+
+                for (int row = 0; row < board.Rows; row++)
+                {
+                    for (int col = 0; col < board.Columns; col++)   
+                    {
+                        aPreviousBorder[row, col] = new Cell();
+                        aPreviousBorder[row, col].IsAlive = board.Cells[row,col].IsAlive;
+                    }
+                }
+                board.Advance();
+
+                for (int row = 0; row < board.Rows; row++)
+                {
+                    for (int col = 0; col < board.Columns; col++)   
+                    {
+                        if (aPreviousBorder[row,col].IsAlive == board.Cells[row, col].IsAlive)
+                        {
+                            aCellsNumber++;
+                        }
+                    }
+                }
+
+                aStep ++;
+                if(aCellsNumber == board.Columns * board.Rows || aStep > 1000)
+                {
+                    break;
+                }
+                aCellsNumber = 0;
+            }
+            
+            board = aStartBoard;
+
+            return aStep;
+        }
+
         static void Render()
         {
             for (int row = 0; row < board.Rows; row++)
@@ -116,12 +195,26 @@ namespace cli_life
                 Console.Write('\n');
             }
         }
-        static void Main(string[] args)
+
+        public static void Main(string[] args)
         {
-            Reset();
+            LifeProperty aLifeProperty;
+            JSONController.DeserializeFromJSON(out aLifeProperty, "LifeProperty.json");
+            Reset(aLifeProperty);
+
+            string[] aShapeNames = {"BARGE",
+                                    "BEEHIVE",
+                                    "BLOCK",
+                                    "BOAT",
+                                    "BOX",
+                                    "LOAF",
+                                    "POND",
+                                    "SHIP"};            
+
             while(true)
             {
-                Console.Clear();
+                TextController.SaveLifeStatus(board.Cells, "LifeStatus.txt");
+
                 Render();
                 board.Advance();
                 Thread.Sleep(1000);
